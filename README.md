@@ -2,6 +2,8 @@
 
 A single web page that lists every book in the Wiki of the Chinese Text Project (ctext.org) with an English title.
 
+Open the site: https://orpheus-21.github.io/ctext-wiki-explorer/
+
 ## What it does
 
 The ctext Wiki holds about 49,500 digitized editions of pre-modern Chinese books. The ctext site shows them page by page and only in Chinese. This project puts all of them on one page in English. The page groups repeated editions of one title into one entry, so the page shows about 38,600 books.
@@ -58,7 +60,9 @@ The page contains no Chinese characters.
 
 ### Open the page
 
-Open `index.html` in a web browser. The repo contains a built copy.
+Open the site address in a web browser. GitHub Pages serves `index.html` from the `main` branch.
+
+To use the page offline, open `index.html` in a web browser. The repo contains a built copy.
 
 ### Build the page
 
