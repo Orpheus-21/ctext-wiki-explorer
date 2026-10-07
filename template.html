@@ -61,6 +61,27 @@ details.facet summary small { color: var(--muted); font-weight: 400; }
 #featured .card { max-width: 520px; }
 footer { color: var(--muted); font-size: 13px; padding: 24px 0 40px; border-top: 1px solid var(--line); }
 #sentinel { height: 1px; }
+nav.views { display: flex; gap: 6px; margin-top: 14px; }
+nav.views a { padding: 6px 14px; border-radius: 999px; background: var(--chip); color: var(--ink); text-decoration: none; font-size: 14px; }
+nav.views a.on { background: var(--chip-on); color: var(--chip-on-ink); }
+#stats-view h2 { font-size: 18px; margin: 26px 0 2px; }
+#stats-view .note { margin: 2px 0 10px; color: var(--muted); font-size: 13px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
+.tile b { display: block; font: 600 24px/1.25 Georgia, "Iowan Old Style", serif; }
+.tile span { color: var(--muted); font-size: 13px; }
+.charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: 12px; padding-bottom: 40px; }
+.chart { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.chart h3 { margin: 0; font-size: 15px; }
+.chart .note { margin: 2px 0 8px; font-size: 12px; }
+.row { all: unset; box-sizing: border-box; display: grid; grid-template-columns: minmax(90px, 40%) 1fr auto; gap: 8px;
+       align-items: center; width: 100%; padding: 3px 4px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.row:hover, .row:focus-visible { background: var(--chip); }
+.row:focus-visible { outline: 2px solid var(--accent); }
+.lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track { height: 12px; }
+.fill { display: block; height: 100%; min-width: 2px; background: var(--accent); border-radius: 0 4px 4px 0; }
+.val { color: var(--muted); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -68,7 +89,11 @@ footer { color: var(--muted); font-size: 13px; padding: 24px 0 40px; border-top:
   <header>
     <h1>ctext <span>Wiki</span> Explorer</h1>
     <p class="sub" id="sub"></p>
+    <nav class="views"><a href="#" id="nav-browse">Browse</a><a href="#stats" id="nav-stats">Statistics</a></nav>
   </header>
+
+  <section id="stats-view" hidden></section>
+  <div id="browse">
 
   <div class="bar">
     <input id="q" type="search" placeholder="Search titles, authors, subjects: war, medicine, poetry, Qi Jiguang…" aria-label="Search titles, authors and subjects">
@@ -90,6 +115,7 @@ footer { color: var(--muted); font-size: 13px; padding: 24px 0 40px; border-top:
   <div class="status"><span id="count"></span><span id="active"></span></div>
   <div class="grid" id="grid"></div>
   <div id="sentinel"></div>
+  </div>
 
   <footer>
     Every book links to its page in the <a href="https://ctext.org/wiki.pl?if=en">Chinese Text Project Wiki</a>, where the text itself is in Chinese.
@@ -241,6 +267,56 @@ document.addEventListener("click", e => {
   const w = e.target.closest("button.who");
   if (w) { state.author = +w.dataset.author; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
 });
+
+// ---- statistics view: built on first open; a click on a bar opens the list with that filter ----
+const big = n => n >= 1e9 ? (n / 1e9).toFixed(2) + " billion" : n >= 1e6 ? (n / 1e6).toFixed(1) + " million" : fmt(n);
+const pct = n => (100 * n / B.length).toFixed(0) + "%";
+const tile = (n, label) => `<div class="tile"><b>${n}</b><span>${esc(label)}</span></div>`;
+function tally(field) { const c = new Map(); B.forEach(b => { if (b[field] >= 0) c.set(b[field], (c.get(b[field]) || 0) + 1); }); return c; }
+function chart(title, note, rows, unit = "books") {  // rows: [label, count, pick]
+  const max = Math.max(1, ...rows.map(r => r[1]));
+  return `<section class="chart"><h3>${esc(title)}</h3><p class="note">${esc(note)}</p>` + rows.map(([l, n, pick]) =>
+    `<button class="row" data-pick="${esc(pick)}" title="${esc(l)}: ${fmt(n)} ${unit}. Click to browse.">` +
+    `<span class="lab">${esc(l)}</span><span class="track"><span class="fill" style="width:${(100 * n / max).toFixed(1)}%"></span></span>` +
+    `<span class="val">${fmt(n)}</span></button>`).join("") + `</section>`;
+}
+function statsHTML() {
+  const n = f => B.filter(f).length, src = tally(6), top = (m, k) => [...m].sort((a, b) => b[1] - a[1]).slice(0, k);
+  const per = tally(5), kind = tally(4), cat = tally(3), auth = tally(2), C = D.ctext;
+  return `<h2>This site</h2><p class="note">Counted from the data on this page.</p><div class="tiles">` +
+    tile(fmt(B.length), "books") + tile(fmt(B.reduce((s, b) => s + eds(b).length, 0)), "editions on ctext") +
+    tile(fmt(P.length), "named authors") + tile(pct(n(b => b[2] >= 0)), "of books have a known author") +
+    tile(pct(n(b => b[3] >= 0)), "of books have a subject") + tile(fmt(src.get(0) || 0), "English titles from Wikipedia") +
+    tile(fmt(src.get(1) || 0), "English titles machine-translated") + tile(fmt(D.fixed), "corrections made in review") + `</div>` +
+    `<h2>The Chinese Text Project</h2><p class="note">Figures from ctext.org, last updated by ctext on ${esc(C.date)}.</p><div class="tiles">` +
+    tile(big(C.wikiChars), "characters of text in the Wiki") + tile(big(C.libraryPages), "scanned pages in the Library") +
+    tile(big(C.dbChars), "characters in the hand-checked texts") + tile(fmt(C.parallels), "parallel passages found between texts") + `</div>` +
+    `<h2>What is in the Wiki</h2><p class="note">Click a bar to see those books.</p><div class="charts">` +
+    chart("Books by period", `When the author lived. ${fmt(B.length - [...per.values()].reduce((a, b) => a + b, 0))} books have no known period.`,
+      D.periods.map((p, i) => [p, per.get(i) || 0, "per:" + i])) +
+    chart("Books by kind", "Guessed from how the Chinese title ends.", top(kind, 15).map(([i, c]) => [D.kinds[i], c, "kind:" + i])) +
+    chart("Books by subject", "The 15 largest subjects from the old imperial library catalogues.", top(cat, 15).map(([i, c]) => [D.cats[i][0], c, "cat:" + i])) +
+    chart("Authors with the most books", "The 12 authors with the most titles in the Wiki.", top(auth, 12).map(([i, c]) => [P[i][0] + (P[i][1] >= 0 ? " · " + D.periods[P[i][1]] : ""), c, "author:" + i])) +
+    chart("Books with the most editions", "Separate copies of the same title on ctext.",
+      B.map((b, i) => [i, eds(b).length]).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([i, c]) => [B[i][0], c, "q:" + B[i][0]]), "editions") +
+    `</div>`;
+}
+function show() {
+  const s = location.hash === "#stats";
+  $("browse").hidden = s; $("stats-view").hidden = !s;
+  $("nav-browse").classList.toggle("on", !s); $("nav-stats").classList.toggle("on", s);
+  if (s && !$("stats-view").innerHTML) $("stats-view").innerHTML = statsHTML();
+}
+addEventListener("hashchange", show);
+document.addEventListener("click", e => {
+  const r = e.target.closest("button.row");
+  if (!r) return;
+  const [k, v] = [r.dataset.pick.slice(0, r.dataset.pick.indexOf(":")), r.dataset.pick.slice(r.dataset.pick.indexOf(":") + 1)];
+  Object.assign(state, { q: "", cat: -1, per: -1, kind: -1, famous: false, author: -1 });
+  if (k === "q") { state.q = v; $("q").value = v; } else state[k] = +v;
+  location.hash = ""; render(); window.scrollTo({ top: 0 });
+});
+show();
 render();
 </script>
 </body>

@@ -266,6 +266,15 @@ def main():
     jx_pub = pub_books[[b[0] for b in books].index("紀效新書")]
     assert jx_pub[0] == "Jixiao Xinshu" and data["people"][jx_pub[2]][0] == "Qi Jiguang", jx_pub
 
+    # site-wide figures from ctext (numbers only) and the count of review corrections
+    st = json.loads(fetch("https://api.ctext.org/getstats", CACHE / "stats.json").read_text())
+    num = lambda k: int(st[k]["value"])
+    data["ctext"] = {"wikiChars": num("contribchars"), "libraryPages": num("docrespages"),
+                     "dbChars": num("chartotal") + num("chartotal_posthan"),
+                     "parallels": num("paralleltotal"), "date": st["statupdate"]["value"][:10]}
+    log = HERE / "review_changes.tsv"
+    data["fixed"] = len(log.read_text().splitlines()) if log.exists() else 0
+
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     html = (HERE / "template.html").read_text().replace("/*DATA*/null", payload)
     assert not CJK.search(html), CJK.search(html)  # English-only page
