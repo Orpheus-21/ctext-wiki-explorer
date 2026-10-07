@@ -25,6 +25,14 @@ On the page, you can:
 * Click "Surprise me" to get a random book from the current list.
 * Sort by the amount of information, at random, from A to Z, or by the number of editions.
 
+The page has a second tab, "Statistics". The tab shows:
+
+* Counts for this site: books, editions, authors, the sources of the English titles, and the number of corrections in `review_changes.tsv`.
+* Figures for the whole Chinese Text Project, with the date of the last ctext update.
+* Bar charts of the books by period, by kind and by subject, the authors with the most books, and the books with the most editions. A click on a bar opens the book list with that filter.
+
+The address `index.html#stats` opens the Statistics tab directly.
+
 The page contains no Chinese characters.
 
 ## Requirements
@@ -115,10 +123,11 @@ After a translation run or a check, run `build.py` again to put the new titles o
 
 ## How it works
 
-`build.py` uses two sources from ctext.org:
+`build.py` uses three sources from ctext.org:
 
 1. The API function `gettexttitles`. It gives the title and the identifier of each Wiki item.
 2. The Data Wiki dump in RDF format. It gives works, authors, dynasties, dates and catalogue subjects.
+3. The API function `getstats`. It gives the figures for the whole Chinese Text Project on the Statistics tab.
 
 The script joins each Wiki item to a work in the dump. It uses the work identifier first and the exact title second. Items that have the same title become one entry. The script finds the kind of book from the last characters of the Chinese title. It finds the period from the dynasty or the dates of the author.
 
